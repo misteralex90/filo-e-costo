@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filo&amp;Costo — gestione costi materiali e prodotti</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧵</text></svg>">
+<style>
+  :root{
+    --bg:#F5F3F7;
+    --surface:#FFFFFF;
+    --surface-2:#FAF7FD;
+    --ink:#241F2E;
+    --ink-muted:#6B6178;
+    --ink-faint:#948C9E;
+    --border:#E1DCE8;
+    --border-strong:#CFC7DA;
+    --accent:#C4306B;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#FBE6EF;
+    --good:#2F8F6E;
+    --good-soft:#E3F2EC;
+    --bad:#C4432E;
+    --bad-soft:#FBE9E5;
+    --grid-line:rgba(36,31,46,0.05);
+    --shadow:0 1px 2px rgba(36,31,46,0.06), 0 8px 24px -12px rgba(36,31,46,0.18);
+    --radius:10px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17131D;
+      --surface:#221C2A;
+      --surface-2:#2A2333;
+      --ink:#EDE8F2;
+      --ink-muted:#A79CB3;
+      --ink-faint:#7C7389;
+      --border:#3A3243;
+      --border-strong:#493F55;
+      --accent:#E85C97;
+      --accent-ink:#1B1620;
+      --accent-soft:#3A2530;
+      --good:#35A67E;
+      --good-soft:#1D3B31;
+      --bad:#E2694F;
+      --bad-soft:#3D251F;
+      --grid-line:rgba(237,232,242,0.05);
+      --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17131D; --surface:#221C2A; --surface-2:#2A2333; --ink:#EDE8F2; --ink-muted:#A79CB3;
+    --ink-faint:#7C7389; --border:#3A3243; --border-strong:#493F55; --accent:#E85C97; --accent-ink:#1B1620;
+    --accent-soft:#3A2530; --good:#35A67E; --good-soft:#1D3B31; --bad:#E2694F; --bad-soft:#3D251F;
+    --grid-line:rgba(237,232,242,0.05); color-scheme: dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#F5F3F7; --surface:#FFFFFF; --surface-2:#FAF7FD; --ink:#241F2E; --ink-muted:#6B6178;
+    --ink-faint:#948C9E; --border:#E1DCE8; --border-strong:#CFC7DA; --accent:#C4306B; --accent-ink:#FFFFFF;
+    --accent-soft:#FBE6EF; --good:#2F8F6E; --good-soft:#E3F2EC; --bad:#C4432E; --bad-soft:#FBE9E5;
+    --grid-line:rgba(36,31,46,0.05); color-scheme: light;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+      var(--bg);
+    background-size:28px 28px, 28px 28px, auto;
+    color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;
+    line-height:1.45;
+    min-height:100vh;
+  }
+  ::selection{background:var(--accent-soft); color:var(--ink);}
+  h1,h2,h3{text-wrap:balance; margin:0; font-family:inherit;}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;}
+  .mono{font-family: ui-monospace,"Cascadia Code","SF Mono",Consolas,"Roboto Mono",monospace; font-variant-numeric:tabular-nums;}
+  button{font:inherit;}
+  input,select,textarea{font:inherit; color:inherit;}
+  a{color:var(--accent);}
+
+  .app{max-width:1180px; margin:0 auto; padding:28px 20px 64px;}
+
+  .topbar{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+    flex-wrap:wrap; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex; flex-direction:column; gap:2px;}
+  .brand .wordmark{
+    font-size:28px; font-weight:800; letter-spacing:-0.01em; display:flex; align-items:baseline; gap:2px;
+  }
+  .brand .wordmark .amp{color:var(--accent);}
+  .brand .tagline{color:var(--ink-muted); font-size:13px;}
+  .topbar-actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+  .btn{
+    appearance:none; border:1px solid var(--border-strong); background:var(--surface); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;
+    display:inline-flex; align-items:center; gap:6px; transition:transform .08s ease, border-color .15s ease;
+  }
+  .btn:hover{border-color:var(--accent);}
+  .btn:active{transform:scale(0.97);}
+  .btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .btn-primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .btn-primary:hover{filter:brightness(1.06); border-color:var(--accent);}
+  .btn-ghost{border-color:transparent; background:transparent;}
+  .btn-ghost:hover{background:var(--surface-2); border-color:var(--border);}
+  .btn-danger{color:var(--bad); border-color:var(--bad-soft);}
+  .btn-danger:hover{border-color:var(--bad); background:var(--bad-soft);}
+  .btn-sm{padding:5px 10px; font-size:12px;}
+
+  .tabs{display:flex; gap:4px; margin-bottom:20px; overflow-x:auto; padding-bottom:2px;}
+  .tab{
+    padding:9px 16px; border-radius:8px; border:1px solid transparent; background:transparent;
+    color:var(--ink-muted); font-weight:600; font-size:13.5px; cursor:pointer; white-space:nowrap;
+  }
+  .tab:hover{color:var(--ink); background:var(--surface-2);}
+  .tab.active{background:var(--surface); color:var(--ink); border-color:var(--border); box-shadow:var(--shadow);}
+  .tab .count{
+    display:inline-block; margin-left:6px; padding:1px 6px; border-radius:999px; background:var(--border);
+    color:var(--ink-muted); font-size:11px; font-weight:700;
+  }
+  .tab.active .count{background:var(--accent-soft); color:var(--accent);}
+
+  .view{display:none;}
+  .view.active{display:block; animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
+  @media (prefers-reduced-motion: reduce){ .view.active{animation:none;} }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:20px;
+  }
+  .grid-2{display:grid; grid-template-columns:1.1fr 1.4fr; gap:18px; align-items:start;}
+  @media (max-width:860px){ .grid-2{grid-template-columns:1fr;} }
+
+  .section-title{font-size:15px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .eyebrow{
+    text-transform:uppercase; letter-spacing:.08em; font-size:11px; font-weight:700; color:var(--ink-faint);
+    margin-bottom:4px;
+  }
+
+  .field{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+  .field label{font-size:12.5px; font-weight:600; color:var(--ink-muted);}
+  .field input, .field select, .field textarea{
+    padding:9px 11px; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface);
+    color:var(--ink); font-size:13.5px; width:100%;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .field-row-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .hint{font-size:11.5px; color:var(--ink-faint);}
+
+  .costbox{
+    background:var(--surface-2); border:1px dashed var(--border-strong); border-radius:8px; padding:12px 14px;
+    display:flex; flex-direction:column; gap:6px; margin-top:6px;
+  }
+  .costbox-row{display:flex; justify-content:space-between; font-size:13px; color:var(--ink-muted);}
+  .costbox-row.total{font-size:16px; font-weight:800; color:var(--ink); padding-top:6px; border-top:1px solid var(--border);}
+  .costbox-row .v{font-weight:700; color:var(--ink);}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint);
+    font-weight:700; padding:8px 10px; border-bottom:1px solid var(--border);
+  }
+  td{padding:10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-2);}
+  .table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface);}
+  .table-wrap table{min-width:560px;}
+  .cell-actions{display:flex; gap:6px; justify-content:flex-end;}
+  .cell-name{font-weight:700;}
+  .cell-sub{color:var(--ink-faint); font-size:11.5px;}
+
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+    font-size:11.5px; font-weight:700;
+  }
+  .badge-good{background:var(--good-soft); color:var(--good);}
+  .badge-bad{background:var(--bad-soft); color:var(--bad);}
+  .badge-neutral{background:var(--border); color:var(--ink-muted);}
+  .badge-dot{width:6px; height:6px; border-radius:50%; background:currentColor;}
+
+  .empty{padding:40px 20px; text-align:center; color:var(--ink-muted);}
+  .empty .big{font-size:15px; font-weight:700; color:var(--ink); margin-bottom:6px;}
+
+  .items-editor{display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
+  .item-row{
+    display:grid; grid-template-columns:1fr 110px 100px 32px; gap:8px; align-items:center;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px;
+  }
+  .item-row .sub{font-size:12px; color:var(--ink-faint); text-align:right;}
+  .icon-btn{
+    width:30px; height:30px; border-radius:7px; border:1px solid var(--border-strong); background:var(--surface);
+    color:var(--ink-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px;
+  }
+  .icon-btn:hover{border-color:var(--bad); color:var(--bad);}
+
+  .products-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:14px;}
+  .pcard{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px;
+    box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px;
+  }
+  .pcard-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .pcard-title{font-weight:800; font-size:15px;}
+  .pcard-cat{color:var(--ink-faint); font-size:11.5px; text-transform:uppercase; letter-spacing:.04em;}
+  .pcard-stats{display:flex; gap:16px;}
+  .pstat{display:flex; flex-direction:column; gap:1px;}
+  .pstat .k{font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint);}
+  .pstat .v{font-weight:800; font-size:15px;}
+  .pcard-actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; padding-top:6px;}
+  .pcard-breakdown{display:none; flex-direction:column; gap:6px; padding-top:6px; border-top:1px solid var(--border);}
+  .pcard.expanded .pcard-breakdown{display:flex;}
+
+  .bar-row{display:grid; grid-template-columns:96px 1fr 64px; align-items:center; gap:8px; font-size:12px;}
+  .bar-row .lbl{color:var(--ink-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .bar-track{position:relative; height:12px; background:var(--border); border-radius:3px; overflow:hidden;}
+  .bar-fill{position:absolute; top:0; bottom:0; left:0; background:var(--accent); border-radius:3px; min-width:2px;}
+  .bar-row .val{text-align:right; color:var(--ink-muted);}
+
+  .divbar-row{display:grid; grid-template-columns:130px 1fr 84px; align-items:center; gap:10px; margin-bottom:9px;}
+  .divbar-row .lbl{font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .divbar-track{position:relative; height:14px; background:var(--border); border-radius:4px;}
+  .divbar-zero{position:absolute; left:50%; top:-4px; bottom:-4px; width:1px; background:var(--ink-faint);}
+  .divbar-fill{position:absolute; top:0; bottom:0; border-radius:4px;}
+  .divbar-row .val{font-size:12.5px; font-weight:700; text-align:right;}
+  .chart-legend{display:flex; gap:16px; margin-bottom:12px; font-size:12px; color:var(--ink-muted);}
+  .chart-legend .item{display:flex; align-items:center; gap:6px;}
+  .chart-legend .dot{width:9px; height:9px; border-radius:50%;}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px;}
+  .stat-tile{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow);}
+  .stat-tile .k{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-weight:700; margin-bottom:6px;}
+  .stat-tile .v{font-size:22px; font-weight:800;}
+  .stat-tile .v.good{color:var(--good);} .stat-tile .v.bad{color:var(--bad);}
+
+  .lowstock-list{display:flex; flex-direction:column; gap:8px;}
+  .lowstock-item{display:flex; justify-content:space-between; align-items:center; padding:9px 12px; background:var(--bad-soft); border-radius:8px; font-size:13px;}
+  .lowstock-item .name{font-weight:700;}
+  .lowstock-item .qty{color:var(--bad); font-weight:700;}
+
+  .tooltip{
+    position:fixed; pointer-events:none; background:var(--ink); color:var(--surface); padding:5px 9px;
+    border-radius:6px; font-size:11.5px; font-weight:600; z-index:50; transform:translate(-50%,-130%);
+    white-space:nowrap; opacity:0; transition:opacity .1s ease;
+  }
+  .tooltip.show{opacity:1;}
+  @media (prefers-color-scheme: dark){ .tooltip{background:var(--surface-2); color:var(--ink); border:1px solid var(--border);} }
+  :root[data-theme="dark"] .tooltip{background:var(--surface-2); color:var(--ink); border:1px solid var(--border);}
+  :root[data-theme="light"] .tooltip{background:var(--ink); color:var(--surface); border:none;}
+
+  .footer-note{margin-top:32px; padding-top:16px; border-top:1px solid var(--border); color:var(--ink-faint); font-size:12px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(10px); background:var(--ink);
+    color:var(--surface); padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600; z-index:100;
+    opacity:0; pointer-events:none; transition:all .2s ease; box-shadow:var(--shadow); max-width:90vw; text-align:center;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,16,26,0.45); z-index:200; padding:20px;
+    display:none; align-items:center; justify-content:center;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 22px;
+    max-width:380px; width:100%; box-shadow:var(--shadow);
+  }
+  .modal-card p{margin:0 0 16px; font-size:13.5px; color:var(--ink); line-height:1.5;}
+  .modal-card input{
+    width:100%; margin-bottom:16px; padding:9px 11px; border-radius:8px; border:1px solid var(--border-strong);
+    background:var(--surface); color:var(--ink); font-size:13.5px;
+  }
+  .modal-card input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  .modal-actions{display:flex; justify-content:flex-end; gap:8px;}
+
+  .sync-status{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-muted); padding:6px 4px;}
+  .sync-dot{width:7px; height:7px; border-radius:50%; background:var(--ink-faint); flex:none;}
+  .sync-status.synced .sync-dot{background:var(--good);}
+  .sync-status.saving .sync-dot{background:var(--accent); animation:pulse 1s ease-in-out infinite;}
+  .sync-status.error .sync-dot{background:var(--bad);}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+  @media (prefers-reduced-motion: reduce){ .sync-status.saving .sync-dot{animation:none;} }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="wordmark">Filo<span class="amp">&amp;</span>Costo</div>
+      <div class="tagline">ciao Feliciana — quanto ti costa e quanto guadagni su ogni pezzo</div>
+    </div>
+    <div class="topbar-actions">
+      <span class="sync-status" id="syncStatus"><span class="sync-dot"></span><span id="syncStatusText">—</span></span>
+      <button class="btn btn-ghost btn-sm" id="btnRefresh">↻ Aggiorna</button>
+      <button class="btn btn-ghost btn-sm" id="btnExport">Esporta backup</button>
+      <button class="btn btn-ghost btn-sm" id="btnImport">Importa backup</button>
+      <input type="file" id="fileImport" accept="application/json" hidden>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="view-materiali" class="view"></div>
+  <div id="view-prodotti" class="view"></div>
+  <div id="view-produzioni" class="view"></div>
+  <div id="view-riepilogo" class="view"></div>
+
+  <div class="footer-note">
+    <span id="footerSyncNote">I dati restano solo su questo browser/dispositivo — usa "Esporta backup" ogni tanto per non perderli.</span>
+    <button class="btn btn-ghost btn-sm" id="btnReset" style="color:var(--bad);">Cancella tutti i dati</button>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modalOverlay"><div class="modal-card" id="modalCard"></div></div>
+<datalist id="units"><option value="pz"><option value="paia"><option value="mt"><option value="cm"><option value="gr"><option value="kg"><option value="ml"><option value="l"><option value="conf"></datalist>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+  var STORAGE_KEY = "filoecosto_v1";
+  var uid = function(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); };
+
+  var SUPABASE_URL = "SUPABASE_URL_PLACEHOLDER";
+  var SUPABASE_ANON_KEY = "SUPABASE_ANON_KEY_PLACEHOLDER";
+  var ROW_ID = "bottega-feliciana";
+  var SYNC_ENABLED = SUPABASE_URL.indexOf("PLACEHOLDER")===-1 && SUPABASE_ANON_KEY.indexOf("PLACEHOLDER")===-1;
+  var sb = SYNC_ENABLED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  var saveTimer = null;
+
+  var state = loadLocalState();
+
+  function loadLocalState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) return migrate(JSON.parse(raw));
+    }catch(e){}
+    return { materials:[], products:[], productions:[], settings:{ defaultLaborRate:0 }, tab:"materiali" };
+  }
+  function migrate(s){
+    s.materials = s.materials || [];
+    s.products = s.products || [];
+    s.productions = s.productions || [];
+    s.settings = s.settings || { defaultLaborRate:0 };
+    s.tab = s.tab || "materiali";
+    return s;
+  }
+  function persistLocal(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+  function save(){
+    persistLocal();
+    if(!SYNC_ENABLED){ setSyncStatus('offline'); return; }
+    clearTimeout(saveTimer);
+    setSyncStatus('saving');
+    saveTimer = setTimeout(pushRemote, 600);
+  }
+  async function pushRemote(){
+    try{
+      var res = await sb.from('app_state').upsert({ id: ROW_ID, data: state, updated_at: new Date().toISOString() });
+      if(res.error) throw res.error;
+      setSyncStatus('synced');
+    }catch(e){ setSyncStatus('error'); }
+  }
+  function isEditingActive(){
+    var el = document.activeElement;
+    if(!el) return false;
+    var tag = el.tagName;
+    return tag==='INPUT' || tag==='SELECT' || tag==='TEXTAREA';
+  }
+  async function pullRemote(notifyIfChanged){
+    if(!SYNC_ENABLED) return;
+    if(isEditingActive()) return;
+    setSyncStatus('saving');
+    try{
+      var res = await sb.from('app_state').select('data').eq('id', ROW_ID).maybeSingle();
+      if(res.error) throw res.error;
+      if(res.data && res.data.data){
+        var incoming = JSON.stringify(res.data.data);
+        var current = JSON.stringify(state);
+        if(incoming !== current){
+          state = migrate(res.data.data);
+          persistLocal();
+          renderAll();
+          if(notifyIfChanged) toast('Dati aggiornati da un altro dispositivo');
+        }
+      } else {
+        await pushRemote();
+      }
+      setSyncStatus('synced');
+    }catch(e){ setSyncStatus('error'); }
+  }
+  function setSyncStatus(status){
+    var el = document.getElementById('syncStatus');
+    var txt = document.getElementById('syncStatusText');
+    var note = document.getElementById('footerSyncNote');
+    if(!el) return;
+    el.className = 'sync-status ' + status;
+    var labels = {
+      offline: 'Solo su questo dispositivo',
+      saving: 'Aggiornamento…',
+      synced: 'Sincronizzato',
+      error: 'Errore di connessione — dati salvati solo qui'
+    };
+    txt.textContent = labels[status] || '—';
+    if(note){
+      note.textContent = SYNC_ENABLED
+        ? 'I dati sono sincronizzati tra i dispositivi che aprono questo link — usa comunque "Esporta backup" ogni tanto come copia di sicurezza.'
+        : 'I dati restano solo su questo browser/dispositivo — usa "Esporta backup" ogni tanto per non perderli.';
+    }
+  }
+
+  function fmtEUR(n){
+    if(n===null || n===undefined || isNaN(n)) n = 0;
+    return n.toLocaleString('it-IT', {style:'currency', currency:'EUR'});
+  }
+  function fmtNum(n, d){
+    if(n===null || n===undefined || isNaN(n)) n = 0;
+    return n.toLocaleString('it-IT', {maximumFractionDigits: d===undefined?2:d});
+  }
+  function esc(s){
+    return (s===undefined||s===null?"":String(s)).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  function modalConfirm(message){
+    return new Promise(function(resolve){
+      var overlay = document.getElementById('modalOverlay');
+      var card = document.getElementById('modalCard');
+      card.innerHTML = '<p>'+esc(message)+'</p><div class="modal-actions"><button class="btn btn-ghost" id="modalCancel">Annulla</button><button class="btn btn-primary" id="modalOk">Conferma</button></div>';
+      overlay.classList.add('show');
+      function cleanup(v){ overlay.classList.remove('show'); resolve(v); }
+      document.getElementById('modalCancel').onclick = function(){ cleanup(false); };
+      document.getElementById('modalOk').onclick = function(){ cleanup(true); };
+    });
+  }
+  function modalPrompt(message, defVal){
+    return new Promise(function(resolve){
+      var overlay = document.getElementById('modalOverlay');
+      var card = document.getElementById('modalCard');
+      card.innerHTML = '<p>'+esc(message)+'</p><input id="modalInput" type="text" inputmode="decimal" value="'+esc(defVal===undefined||defVal===null?'':defVal)+'"><div class="modal-actions"><button class="btn btn-ghost" id="modalCancel">Annulla</button><button class="btn btn-primary" id="modalOk">OK</button></div>';
+      overlay.classList.add('show');
+      var input = document.getElementById('modalInput');
+      setTimeout(function(){ input.focus(); input.select(); }, 0);
+      function cleanup(v){ overlay.classList.remove('show'); resolve(v); }
+      document.getElementById('modalCancel').onclick = function(){ cleanup(null); };
+      document.getElementById('modalOk').onclick = function(){ cleanup(input.value); };
+      input.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); cleanup(input.value); }
+        if(e.key==='Escape'){ cleanup(null); }
+      });
+    });
+  }
+  function modalAlert(message){
+    return new Promise(function(resolve){
+      var overlay = document.getElementById('modalOverlay');
+      var card = document.getElementById('modalCard');
+      card.innerHTML = '<p>'+esc(message)+'</p><div class="modal-actions"><button class="btn btn-primary" id="modalOk">OK</button></div>';
+      overlay.classList.add('show');
+      document.getElementById('modalOk').onclick = function(){ overlay.classList.remove('show'); resolve(); };
+    });
+  }
+  function modalNewMaterial(){
+    return new Promise(function(resolve){
+      var overlay = document.getElementById('modalOverlay');
+      var card = document.getElementById('modalCard');
+      card.innerHTML =
+        '<p style="font-weight:700; font-size:14.5px;">Nuovo materiale</p>'+
+        '<div class="field"><label>Nome</label><input id="nm_name" placeholder="es. Nastro rosso"></div>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Quanto ne hai comprato</label><input id="nm_qty" type="number" step="any" min="0" placeholder="es. 10"></div>'+
+          '<div class="field"><label>Unità</label><input id="nm_unit" list="units" placeholder="pz, mt, gr..."></div>'+
+        '</div>'+
+        '<div class="field"><label>Quanto hai speso in tutto (€)</label><input id="nm_price" type="number" step="any" min="0" placeholder="es. 3.50"></div>'+
+        '<div class="modal-actions"><button class="btn btn-ghost" id="modalCancel">Annulla</button><button class="btn btn-primary" id="modalOk">Aggiungi</button></div>';
+      overlay.classList.add('show');
+      setTimeout(function(){ document.getElementById('nm_name').focus(); }, 0);
+      function cleanup(v){ overlay.classList.remove('show'); resolve(v); }
+      document.getElementById('modalCancel').onclick = function(){ cleanup(null); };
+      document.getElementById('modalOk').onclick = function(){
+        var name = document.getElementById('nm_name').value.trim();
+        var qty = Number(document.getElementById('nm_qty').value);
+        var unit = document.getElementById('nm_unit').value.trim();
+        var price = Number(document.getElementById('nm_price').value);
+        if(!name || !unit || !(qty>0) || !(price>=0)){ toast('Compila nome, quantità, unità e prezzo'); return; }
+        cleanup({name:name, unit:unit, qty:qty, price:price});
+      };
+    });
+  }
+
+  function unitCost(mat){
+    if(!mat.totalQtyPurchased) return 0;
+    return mat.totalSpent / mat.totalQtyPurchased;
+  }
+  function lowStockThreshold(mat){
+    if(mat.lowStockThreshold !== null && mat.lowStockThreshold !== undefined && mat.lowStockThreshold !== "") return Number(mat.lowStockThreshold);
+    return mat.totalQtyPurchased * 0.15;
+  }
+  function materialById(id){
+    for(var i=0;i<state.materials.length;i++) if(state.materials[i].id===id) return state.materials[i];
+    return null;
+  }
+  function productById(id){
+    for(var i=0;i<state.products.length;i++) if(state.products[i].id===id) return state.products[i];
+    return null;
+  }
+  function computeProduct(p){
+    var materialsCost = 0;
+    var breakdown = [];
+    (p.items||[]).forEach(function(it){
+      var m = materialById(it.materialId);
+      if(!m) return;
+      var cost = unitCost(m) * Number(it.qty||0);
+      materialsCost += cost;
+      breakdown.push({ name:m.name, cost:cost, unit:m.unit });
+    });
+    var laborCost = (Number(p.laborMinutes||0)/60) * Number(p.laborRate||0);
+    var extra = Number(p.extraCost||0);
+    var totalCost = materialsCost + laborCost + extra;
+    var sellingPrice = p.sellingPrice === "" || p.sellingPrice === undefined || p.sellingPrice === null ? null : Number(p.sellingPrice);
+    var margin = sellingPrice !== null ? sellingPrice - totalCost : null;
+    var marginPct = (margin !== null && sellingPrice) ? (margin / sellingPrice * 100) : null;
+    var suggestedPrice = null;
+    if(p.targetMarginPct !== "" && p.targetMarginPct !== undefined && p.targetMarginPct !== null){
+      var tm = Number(p.targetMarginPct)/100;
+      if(tm < 1) suggestedPrice = totalCost / (1 - tm);
+    }
+    breakdown.sort(function(a,b){ return b.cost - a.cost; });
+    return { materialsCost:materialsCost, laborCost:laborCost, extra:extra, totalCost:totalCost, sellingPrice:sellingPrice, margin:margin, marginPct:marginPct, suggestedPrice:suggestedPrice, breakdown:breakdown };
+  }
+
+  // ---------- TABS ----------
+  var TABS = [
+    {id:"materiali", label:"Materiali"},
+    {id:"prodotti", label:"Prodotti"},
+    {id:"produzioni", label:"Produzioni"},
+    {id:"riepilogo", label:"Riepilogo"}
+  ];
+  function renderTabs(){
+    var el = document.getElementById('tabs');
+    el.innerHTML = TABS.map(function(t){
+      var count = t.id==="materiali"?state.materials.length : t.id==="prodotti"?state.products.length : t.id==="produzioni"?state.productions.length : null;
+      return '<button class="tab'+(state.tab===t.id?' active':'')+'" data-tab="'+t.id+'">'+t.label+(count!==null?'<span class="count">'+count+'</span>':'')+'</button>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('.tab'), function(b){
+      b.addEventListener('click', function(){ state.tab = b.dataset.tab; save(); renderAll(); });
+    });
+  }
+  function renderViews(){
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    document.getElementById('view-'+state.tab).classList.add('active');
+  }
+
+  // ================= MATERIALI =================
+  var editingMaterialId = null;
+
+  function renderMaterialiView(){
+    var root = document.getElementById('view-materiali');
+    var editing = editingMaterialId ? materialById(editingMaterialId) : null;
+    root.innerHTML =
+      '<div class="grid-2">'+
+        '<div class="card">'+
+          '<div class="section-title">'+(editing?'Modifica materiale':'Nuovo materiale')+'</div>'+
+          '<form id="formMaterial">'+
+            '<div class="field"><label>Nome</label><input required id="m_name" placeholder="es. Infradito base, Spago, Pon pon..." value="'+esc(editing?editing.name:'')+'"></div>'+
+            '<div class="field-row">'+
+              '<div class="field"><label>Quanto ne hai comprato</label><input required id="m_qty" type="number" step="any" min="0" placeholder="es. 10" value="'+(editing?editing.totalQtyPurchased:'')+'"></div>'+
+              '<div class="field"><label>Unità</label><input required id="m_unit" list="units" placeholder="pz, mt, gr..." value="'+esc(editing?editing.unit:'')+'"></div>'+
+            '</div>'+
+            '<div class="field"><label>Quanto hai speso in tutto (€)</label><input required id="m_price" type="number" step="any" min="0" placeholder="es. 3.50" value="'+(editing?editing.totalSpent:'')+'"></div>'+
+            '<div class="field"><label>Nota <span class="hint">(facoltativa)</span></label><input id="m_note" placeholder="es. fornitore, colore..." value="'+esc(editing?editing.note||'':'')+'"></div>'+
+            '<div class="costbox" id="m_preview"></div>'+
+            '<div style="display:flex; gap:8px; margin-top:14px;">'+
+              '<button type="submit" class="btn btn-primary">'+(editing?'Salva modifiche':'Aggiungi materiale')+'</button>'+
+              (editing?'<button type="button" class="btn btn-ghost" id="m_cancel">Annulla</button>':'')+
+            '</div>'+
+          '</form>'+
+        '</div>'+
+        '<div>'+
+          '<div class="section-title">I tuoi materiali <input id="matSearch" placeholder="cerca..." style="font-size:12.5px; padding:6px 10px; border-radius:7px; border:1px solid var(--border-strong); background:var(--surface); width:160px;"></div>'+
+          '<div id="matTableWrap"></div>'+
+        '</div>'+
+      '</div>';
+
+    function updatePreview(){
+      var qty = Number(document.getElementById('m_qty').value||0);
+      var price = Number(document.getElementById('m_price').value||0);
+      var uc = qty>0 ? price/qty : 0;
+      var unit = document.getElementById('m_unit').value || 'unità';
+      document.getElementById('m_preview').innerHTML =
+        '<div class="costbox-row"><span>Costo per '+esc(unit)+'</span><span class="v mono">'+fmtEUR(uc)+'</span></div>'+
+        '<div class="costbox-row"><span>Scorta iniziale</span><span class="v mono">'+fmtNum(qty)+' '+esc(unit)+'</span></div>';
+    }
+    ['m_qty','m_price','m_unit'].forEach(function(id){
+      document.getElementById(id).addEventListener('input', updatePreview);
+    });
+    updatePreview();
+
+    document.getElementById('formMaterial').addEventListener('submit', function(e){
+      e.preventDefault();
+      var name = document.getElementById('m_name').value.trim();
+      var qty = Number(document.getElementById('m_qty').value);
+      var unit = document.getElementById('m_unit').value.trim();
+      var price = Number(document.getElementById('m_price').value);
+      var note = document.getElementById('m_note').value.trim();
+      if(!name || !unit || !(qty>0)) return;
+      if(editing){
+        var qtyDelta = qty - editing.totalQtyPurchased;
+        editing.name = name; editing.unit = unit; editing.note = note;
+        editing.totalQtyPurchased = qty; editing.totalSpent = price;
+        editing.remainingQty += qtyDelta;
+        toast('Materiale aggiornato');
+      } else {
+        state.materials.push({
+          id: uid(), name:name, unit:unit, totalQtyPurchased:qty, totalSpent:price,
+          remainingQty:qty, lowStockThreshold: null, note:note
+        });
+        toast('Materiale aggiunto');
+      }
+      editingMaterialId = null;
+      save(); renderAll();
+    });
+    if(editing){
+      document.getElementById('m_cancel').addEventListener('click', function(){ editingMaterialId=null; renderAll(); });
+    }
+
+    renderMaterialsTable('');
+    document.getElementById('matSearch').addEventListener('input', function(e){ renderMaterialsTable(e.target.value); });
+  }
+
+  function renderMaterialsTable(filter){
+    var wrap = document.getElementById('matTableWrap');
+    var list = state.materials.filter(function(m){
+      return !filter || m.name.toLowerCase().indexOf(filter.toLowerCase())>-1;
+    });
+    if(list.length===0){
+      wrap.innerHTML = '<div class="card empty"><div class="big">Nessun materiale ancora</div>Aggiungi il primo materiale che compri per iniziare a calcolare i costi.</div>';
+      return;
+    }
+    var rows = list.map(function(m){
+      var uc = unitCost(m);
+      var low = m.remainingQty <= lowStockThreshold(m);
+      var negative = m.remainingQty < 0;
+      return '<tr>'+
+        '<td><div class="cell-name">'+esc(m.name)+'</div>'+(m.note?'<div class="cell-sub">'+esc(m.note)+'</div>':'')+'</td>'+
+        '<td class="mono">'+fmtEUR(uc)+' <span class="cell-sub">/ '+esc(m.unit)+'</span></td>'+
+        '<td class="mono">'+fmtNum(m.remainingQty)+' '+esc(m.unit)+
+          (negative?' <span class="badge badge-bad"><span class="badge-dot"></span>esaurito</span>':(low?' <span class="badge badge-bad"><span class="badge-dot"></span>scorta bassa</span>':''))+
+        '</td>'+
+        '<td><div class="cell-actions">'+
+          '<button class="btn btn-sm btn-ghost" data-restock="'+m.id+'">Rifornisci</button>'+
+          '<button class="btn btn-sm btn-ghost" data-editmat="'+m.id+'">Modifica</button>'+
+          '<button class="btn btn-sm btn-danger" data-delmat="'+m.id+'">Elimina</button>'+
+        '</div></td>'+
+      '</tr>';
+    }).join('');
+    wrap.innerHTML = '<table><thead><tr><th>Materiale</th><th>Costo unitario</th><th>Scorta rimanente</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+    wrap.className = 'table-wrap';
+
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-editmat]'), function(b){
+      b.addEventListener('click', function(){ editingMaterialId = b.dataset.editmat; renderAll(); window.scrollTo({top:0, behavior:'smooth'}); });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-delmat]'), function(b){
+      b.addEventListener('click', async function(){
+        var m = materialById(b.dataset.delmat);
+        var used = state.products.some(function(p){ return (p.items||[]).some(function(it){ return it.materialId===m.id; }); });
+        var msg = used ? '"'+m.name+'" è usato in almeno un prodotto. Eliminarlo comunque?' : 'Eliminare "'+m.name+'"?';
+        var ok = await modalConfirm(msg);
+        if(!ok) return;
+        state.materials = state.materials.filter(function(x){ return x.id!==m.id; });
+        state.products.forEach(function(p){ p.items = (p.items||[]).filter(function(it){ return it.materialId!==m.id; }); });
+        save(); renderAll(); toast('Materiale eliminato');
+      });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-restock]'), function(b){
+      b.addEventListener('click', async function(){
+        var m = materialById(b.dataset.restock);
+        var qtyStr = await modalPrompt('Quanta quantità hai comprato in più? ('+m.unit+')', '');
+        if(qtyStr===null) return;
+        var qty = Number(qtyStr);
+        if(!(qty>0)) return;
+        var priceStr = await modalPrompt('Quanto hai pagato in totale per questa nuova scorta? (€)', '');
+        if(priceStr===null) return;
+        var price = Number(priceStr);
+        if(!(price>=0)) return;
+        m.totalQtyPurchased += qty;
+        m.totalSpent += price;
+        m.remainingQty += qty;
+        save(); renderAll();
+        toast('Scorta aggiornata — nuovo costo unitario '+fmtEUR(unitCost(m)));
+      });
+    });
+  }
+
+  // ================= PRODOTTI =================
+  var editingProductId = null;
+  var draftItems = [];
+  var expandedProducts = {};
+
+  function renderProdottiView(){
+    var root = document.getElementById('view-prodotti');
+    var editing = editingProductId ? productById(editingProductId) : null;
+    if(editing && draftItems._for !== editingProductId){
+      draftItems = editing.items.map(function(it){ return {materialId:it.materialId, qty:it.qty}; });
+      draftItems._for = editingProductId;
+    }
+    if(!editing && draftItems._for !== 'new'){
+      draftItems = []; draftItems._for = 'new';
+    }
+
+    function buildMatOptions(){
+      return '<option value="__new__">+ Nuovo materiale…</option>' +
+        state.materials.map(function(m){ return '<option value="'+m.id+'">'+esc(m.name)+' ('+fmtEUR(unitCost(m))+'/'+esc(m.unit)+')</option>'; }).join('');
+    }
+
+    var advancedHasData = !!editing && (Number(editing.laborMinutes||0)>0 || Number(editing.extraCost||0)>0 || editing.targetMarginPct!=null || editing.category || editing.note);
+
+    root.innerHTML =
+      '<div class="grid-2">'+
+        '<div class="card">'+
+          '<div class="section-title">'+(editing?'Modifica prodotto':'Nuovo prodotto')+'</div>'+
+          (state.materials.length===0 ? '<div class="hint" style="margin-bottom:10px;">Aggiungi prima qualche materiale nella scheda "Materiali" (o creane uno al volo qui sotto).</div>' : '')+
+          '<form id="formProduct">'+
+            '<div class="field"><label>Nome prodotto</label><input required id="p_name" placeholder="es. Infradito decorate" value="'+esc(editing?editing.name:'')+'"></div>'+
+            '<div class="field"><label>Materiali usati per farne uno</label>'+
+              '<div class="items-editor" id="itemsEditor"></div>'+
+              '<button type="button" class="btn btn-sm btn-ghost" id="addItemRow">+ aggiungi materiale</button>'+
+            '</div>'+
+            '<div class="field"><label>Prezzo di vendita (€)</label><input id="p_price" type="number" step="any" min="0" placeholder="a quanto lo vendi?" value="'+(editing && editing.sellingPrice!=null?editing.sellingPrice:'')+'"></div>'+
+            '<div class="costbox" id="p_preview"></div>'+
+            '<button type="button" class="btn btn-ghost btn-sm" id="toggleAdvanced" style="margin-top:12px;">'+(advancedHasData?'&minus; Nascondi altri costi e opzioni':'+ Altri costi e opzioni (facoltativo)')+'</button>'+
+            '<div id="advancedFields" style="display:'+(advancedHasData?'flex':'none')+'; flex-direction:column; margin-top:10px;">'+
+              '<div class="field-row">'+
+                '<div class="field"><label>Categoria <span class="hint">(opz.)</span></label><input id="p_cat" placeholder="es. Bomboniere" value="'+esc(editing?editing.category||'':'')+'"></div>'+
+                '<div class="field"><label>Margine desiderato % <span class="hint">(per un prezzo suggerito)</span></label><input id="p_target" type="number" step="any" min="0" max="99" value="'+(editing && editing.targetMarginPct!=null?editing.targetMarginPct:'')+'"></div>'+
+              '</div>'+
+              '<div class="field-row-3">'+
+                '<div class="field"><label>Manodopera (minuti)</label><input id="p_minutes" type="number" step="any" min="0" value="'+(editing?editing.laborMinutes||'':'')+'"></div>'+
+                '<div class="field"><label>Tariffa oraria (€/h)</label><input id="p_rate" type="number" step="any" min="0" value="'+(editing?editing.laborRate:(state.settings.defaultLaborRate||''))+'"></div>'+
+                '<div class="field"><label>Altri costi fissi (€)</label><input id="p_extra" type="number" step="any" min="0" placeholder="es. imballaggio" value="'+(editing?editing.extraCost||'':'')+'"></div>'+
+              '</div>'+
+              '<div class="field"><label>Nota <span class="hint">(facoltativa)</span></label><input id="p_note" value="'+esc(editing?editing.note||'':'')+'"></div>'+
+            '</div>'+
+            '<div style="display:flex; gap:8px; margin-top:14px;">'+
+              '<button type="submit" class="btn btn-primary">'+(editing?'Salva modifiche':'Crea prodotto')+'</button>'+
+              (editing?'<button type="button" class="btn btn-ghost" id="p_cancel">Annulla</button>':'')+
+            '</div>'+
+          '</form>'+
+        '</div>'+
+        '<div>'+
+          '<div class="section-title">I tuoi prodotti</div>'+
+          '<div id="prodList"></div>'+
+        '</div>'+
+      '</div>';
+
+    document.getElementById('toggleAdvanced').addEventListener('click', function(){
+      var box = document.getElementById('advancedFields');
+      var open = box.style.display !== 'none';
+      box.style.display = open ? 'none' : 'flex';
+      this.textContent = open ? '+ Altri costi e opzioni (facoltativo)' : '− Nascondi altri costi e opzioni';
+    });
+
+    function renderItemsEditor(){
+      var el = document.getElementById('itemsEditor');
+      if(draftItems.length===0){
+        el.innerHTML = '<div class="hint">Nessun materiale aggiunto — usa il pulsante qui sotto.</div>';
+        return;
+      }
+      var opts = buildMatOptions();
+      el.innerHTML = draftItems.map(function(it, idx){
+        var m = materialById(it.materialId);
+        var cost = m ? unitCost(m)*Number(it.qty||0) : 0;
+        return '<div class="item-row">'+
+          '<select data-idx="'+idx+'" class="it_mat">'+ '<option value="">— scegli materiale —</option>' + opts.replace('value="'+it.materialId+'"','value="'+it.materialId+'" selected') +'</select>'+
+          '<input data-idx="'+idx+'" class="it_qty" type="number" step="any" min="0" placeholder="quantità" value="'+(it.qty||'')+'">'+
+          '<div class="sub mono">'+fmtEUR(cost)+'</div>'+
+          '<button type="button" class="icon-btn" data-rmidx="'+idx+'" title="rimuovi">&times;</button>'+
+        '</div>';
+      }).join('');
+      Array.prototype.forEach.call(el.querySelectorAll('.it_mat'), function(s){
+        s.addEventListener('change', async function(){
+          var idx = +s.dataset.idx;
+          if(s.value === '__new__'){
+            var res = await modalNewMaterial();
+            if(!res){ renderItemsEditor(); return; }
+            var mat = { id:uid(), name:res.name, unit:res.unit, totalQtyPurchased:res.qty, totalSpent:res.price, remainingQty:res.qty, lowStockThreshold:null, note:'' };
+            state.materials.push(mat);
+            draftItems[idx].materialId = mat.id;
+            save(); renderAll(); toast('Materiale aggiunto');
+            return;
+          }
+          draftItems[idx].materialId = s.value; renderItemsEditor(); updateProductPreview();
+        });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll('.it_qty'), function(i){
+        i.addEventListener('input', function(){ draftItems[+i.dataset.idx].qty = i.value; renderItemsEditor(); updateProductPreview(); });
+      });
+      Array.prototype.forEach.call(el.querySelectorAll('[data-rmidx]'), function(b){
+        b.addEventListener('click', function(){ draftItems.splice(+b.dataset.rmidx,1); renderItemsEditor(); updateProductPreview(); });
+      });
+    }
+    renderItemsEditor();
+
+    document.getElementById('addItemRow').addEventListener('click', async function(){
+      if(state.materials.length===0){
+        var res = await modalNewMaterial();
+        if(!res) return;
+        var mat = { id:uid(), name:res.name, unit:res.unit, totalQtyPurchased:res.qty, totalSpent:res.price, remainingQty:res.qty, lowStockThreshold:null, note:'' };
+        state.materials.push(mat);
+        draftItems.push({materialId:mat.id, qty:''});
+        save(); renderAll(); toast('Materiale aggiunto');
+        return;
+      }
+      draftItems.push({materialId:state.materials[0].id, qty:''});
+      renderItemsEditor(); updateProductPreview();
+    });
+
+    function currentDraftProduct(){
+      return {
+        items: draftItems.filter(function(it){ return it.materialId; }).map(function(it){ return {materialId:it.materialId, qty:Number(it.qty||0)}; }),
+        laborMinutes: Number(document.getElementById('p_minutes').value||0),
+        laborRate: Number(document.getElementById('p_rate').value||0),
+        extraCost: Number(document.getElementById('p_extra').value||0),
+        sellingPrice: document.getElementById('p_price').value,
+        targetMarginPct: document.getElementById('p_target').value
+      };
+    }
+    function updateProductPreview(){
+      var c = computeProduct(currentDraftProduct());
+      var html = '';
+      html += '<div class="costbox-row"><span>Costo materiali</span><span class="v mono">'+fmtEUR(c.materialsCost)+'</span></div>';
+      if(c.laborCost>0) html += '<div class="costbox-row"><span>Costo manodopera</span><span class="v mono">'+fmtEUR(c.laborCost)+'</span></div>';
+      if(c.extra>0) html += '<div class="costbox-row"><span>Altri costi</span><span class="v mono">'+fmtEUR(c.extra)+'</span></div>';
+      html += '<div class="costbox-row total"><span>Ti costa</span><span class="v mono">'+fmtEUR(c.totalCost)+'</span></div>';
+      if(c.sellingPrice!==null){
+        var mcls = c.margin>=0?'good':'bad';
+        html += '<div class="costbox-row total"><span>Guadagni</span><span class="v mono" style="color:var(--'+mcls+')">'+fmtEUR(c.margin)+'</span></div>';
+        html += '<div class="hint" style="text-align:right; margin-top:-4px;">'+fmtNum(c.marginPct,0)+'% del prezzo di vendita</div>';
+      } else {
+        html += '<div class="hint" style="margin-top:2px;">Metti il prezzo di vendita qui sopra per vedere quanto guadagni.</div>';
+      }
+      if(c.suggestedPrice!==null){
+        html += '<div class="costbox-row"><span>Prezzo suggerito</span><span class="v mono">'+fmtEUR(c.suggestedPrice)+'</span></div>';
+      }
+      document.getElementById('p_preview').innerHTML = html;
+    }
+    ['p_minutes','p_rate','p_extra','p_price','p_target'].forEach(function(id){
+      document.getElementById(id).addEventListener('input', updateProductPreview);
+    });
+    updateProductPreview();
+
+    document.getElementById('formProduct').addEventListener('submit', async function(e){
+      e.preventDefault();
+      var name = document.getElementById('p_name').value.trim();
+      if(!name) return;
+      var draft = currentDraftProduct();
+      if(draft.items.length===0){
+        var ok = await modalConfirm('Nessun materiale collegato: continuare comunque?');
+        if(!ok) return;
+      }
+      var payload = {
+        name:name, category:document.getElementById('p_cat').value.trim(),
+        items: draft.items, laborMinutes: draft.laborMinutes, laborRate: draft.laborRate, extraCost: draft.extraCost,
+        sellingPrice: draft.sellingPrice===""?null:Number(draft.sellingPrice),
+        targetMarginPct: draft.targetMarginPct===""?null:Number(draft.targetMarginPct),
+        note: document.getElementById('p_note').value.trim()
+      };
+      if(editing){
+        Object.assign(editing, payload);
+        toast('Prodotto aggiornato');
+      } else {
+        payload.id = uid();
+        state.products.push(payload);
+        toast('Prodotto creato');
+      }
+      editingProductId = null; draftItems = []; draftItems._for = null;
+      save(); renderAll();
+    });
+    if(editing){
+      document.getElementById('p_cancel').addEventListener('click', function(){ editingProductId=null; draftItems=[]; draftItems._for=null; renderAll(); });
+    }
+
+    renderProductsList();
+  }
+
+  function renderProductsList(){
+    var el = document.getElementById('prodList');
+    if(state.products.length===0){
+      el.innerHTML = '<div class="card empty"><div class="big">Nessun prodotto ancora</div>Crea il tuo primo prodotto scegliendo i materiali che usi e le quantità.</div>';
+      return;
+    }
+    el.innerHTML = '<div class="products-grid">'+state.products.map(function(p){
+      var c = computeProduct(p);
+      var maxCost = Math.max.apply(null, c.breakdown.map(function(b){return b.cost;}).concat([0.0001]));
+      var expanded = !!expandedProducts[p.id];
+      return '<div class="pcard'+(expanded?' expanded':'')+'">'+
+        '<div class="pcard-head">'+
+          '<div><div class="pcard-title">'+esc(p.name)+'</div>'+(p.category?'<div class="pcard-cat">'+esc(p.category)+'</div>':'')+'</div>'+
+        '</div>'+
+        '<div class="pcard-stats">'+
+          '<div class="pstat"><span class="k">Ti costa</span><span class="v mono">'+fmtEUR(c.totalCost)+'</span></div>'+
+          (c.sellingPrice!==null?'<div class="pstat"><span class="k">Lo vendi</span><span class="v mono">'+fmtEUR(c.sellingPrice)+'</span></div>':'')+
+          (c.margin!==null?'<div class="pstat"><span class="k">Guadagni</span><span class="v mono" style="color:var(--'+(c.margin>=0?'good':'bad')+')">'+fmtEUR(c.margin)+'</span></div>':'')+
+        '</div>'+
+        '<div class="pcard-breakdown">'+ c.breakdown.map(function(b){
+          var pct = Math.max(2, (b.cost/maxCost)*100);
+          return '<div class="bar-row"><div class="lbl">'+esc(b.name)+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%" data-tip="'+esc(b.name)+': '+fmtEUR(b.cost)+'"></div></div><div class="val mono">'+fmtEUR(b.cost)+'</div></div>';
+        }).join('') + (c.laborCost>0?'<div class="bar-row"><div class="lbl">Manodopera</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,(c.laborCost/maxCost)*100)+'%; background:var(--ink-faint);" data-tip="Manodopera: '+fmtEUR(c.laborCost)+'"></div></div><div class="val mono">'+fmtEUR(c.laborCost)+'</div></div>':'') +
+        '</div>'+
+        '<div class="pcard-actions">'+
+          '<button class="btn btn-sm btn-ghost" data-toggle="'+p.id+'">'+(expanded?'Nascondi dettaglio':'Dettaglio costi')+'</button>'+
+          '<button class="btn btn-sm btn-primary" data-produce="'+p.id+'">Ne ho fatti altri</button>'+
+          '<button class="btn btn-sm btn-ghost" data-dup="'+p.id+'">Duplica</button>'+
+          '<button class="btn btn-sm btn-ghost" data-editprod="'+p.id+'">Modifica</button>'+
+          '<button class="btn btn-sm btn-danger" data-delprod="'+p.id+'">Elimina</button>'+
+        '</div>'+
+      '</div>';
+    }).join('') + '</div>';
+
+    Array.prototype.forEach.call(el.querySelectorAll('[data-toggle]'), function(b){
+      b.addEventListener('click', function(){ var id=b.dataset.toggle; expandedProducts[id]=!expandedProducts[id]; renderProductsList(); });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-editprod]'), function(b){
+      b.addEventListener('click', function(){ editingProductId=b.dataset.editprod; draftItems._for=null; renderAll(); window.scrollTo({top:0, behavior:'smooth'}); });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-delprod]'), function(b){
+      b.addEventListener('click', async function(){
+        var p = productById(b.dataset.delprod);
+        var ok = await modalConfirm('Eliminare "'+p.name+'"? Verranno eliminate anche le produzioni registrate.');
+        if(!ok) return;
+        state.products = state.products.filter(function(x){ return x.id!==p.id; });
+        state.productions = state.productions.filter(function(x){ return x.productId!==p.id; });
+        save(); renderAll(); toast('Prodotto eliminato');
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-dup]'), function(b){
+      b.addEventListener('click', function(){
+        var p = productById(b.dataset.dup);
+        var copy = JSON.parse(JSON.stringify(p));
+        copy.id = uid(); copy.name = p.name + ' (copia)';
+        state.products.push(copy);
+        save(); renderAll(); toast('Prodotto duplicato');
+      });
+    });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-produce]'), function(b){
+      b.addEventListener('click', async function(){
+        var p = productById(b.dataset.produce);
+        var qtyStr = await modalPrompt('Quanti pezzi di "'+p.name+'" hai realizzato?', '1');
+        if(qtyStr===null) return;
+        var qty = Number(qtyStr);
+        if(!(qty>0)) return;
+        var c = computeProduct(p);
+        var deficits = [];
+        p.items.forEach(function(it){
+          var m = materialById(it.materialId);
+          if(!m) return;
+          var need = Number(it.qty)*qty;
+          m.remainingQty -= need;
+          if(m.remainingQty < 0) deficits.push(m.name);
+        });
+        state.productions.push({
+          id: uid(), productId:p.id, date: new Date().toISOString().slice(0,10),
+          qtyMade: qty, unitCostSnapshot: c.totalCost, unitPriceSnapshot: c.sellingPrice, note:''
+        });
+        save(); renderAll();
+        if(deficits.length) toast('Registrato — attenzione, scorta insufficiente per: '+deficits.join(', '));
+        else toast('Produzione registrata');
+      });
+    });
+  }
+
+  // ================= PRODUZIONI =================
+  function renderProduzioniView(){
+    var root = document.getElementById('view-produzioni');
+    if(state.products.length===0){
+      root.innerHTML = '<div class="card empty"><div class="big">Crea prima un prodotto</div>Le produzioni si registrano dalla scheda "Prodotti", pulsante "Registra produzione".</div>';
+      return;
+    }
+    var rows = state.productions.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || b.id.localeCompare(a.id); }).map(function(pr){
+      var p = productById(pr.productId);
+      var totalCost = pr.unitCostSnapshot * pr.qtyMade;
+      var revenue = pr.unitPriceSnapshot!=null ? pr.unitPriceSnapshot*pr.qtyMade : null;
+      var margin = revenue!==null ? revenue-totalCost : null;
+      return '<tr>'+
+        '<td class="mono">'+esc(pr.date)+'</td>'+
+        '<td class="cell-name">'+esc(p?p.name:'(eliminato)')+'</td>'+
+        '<td class="mono">'+fmtNum(pr.qtyMade,0)+'</td>'+
+        '<td class="mono">'+fmtEUR(totalCost)+'</td>'+
+        '<td class="mono">'+(revenue!==null?fmtEUR(revenue):'—')+'</td>'+
+        '<td class="mono">'+(margin!==null?'<span style="color:var(--'+(margin>=0?'good':'bad')+')">'+fmtEUR(margin)+'</span>':'—')+'</td>'+
+        '<td><button class="btn btn-sm btn-danger" data-delprod-log="'+pr.id+'">Elimina</button></td>'+
+      '</tr>';
+    }).join('');
+    var totalProduced = state.productions.reduce(function(s,pr){return s+pr.qtyMade;},0);
+    var totalRevenue = state.productions.reduce(function(s,pr){return s+(pr.unitPriceSnapshot!=null?pr.unitPriceSnapshot*pr.qtyMade:0);},0);
+    var totalCostAll = state.productions.reduce(function(s,pr){return s+pr.unitCostSnapshot*pr.qtyMade;},0);
+    root.innerHTML =
+      '<div class="stat-grid">'+
+        '<div class="stat-tile"><div class="k">Pezzi realizzati</div><div class="v num">'+fmtNum(totalProduced,0)+'</div></div>'+
+        '<div class="stat-tile"><div class="k">Costo totale sostenuto</div><div class="v num">'+fmtEUR(totalCostAll)+'</div></div>'+
+        '<div class="stat-tile"><div class="k">Incasso potenziale</div><div class="v num">'+fmtEUR(totalRevenue)+'</div></div>'+
+        '<div class="stat-tile"><div class="k">Guadagno potenziale</div><div class="v num '+(totalRevenue-totalCostAll>=0?'good':'bad')+'">'+fmtEUR(totalRevenue-totalCostAll)+'</div></div>'+
+      '</div>'+
+      (state.productions.length===0 ?
+        '<div class="card empty"><div class="big">Nessuna produzione registrata</div>Quando realizzi dei pezzi, segnalo dalla scheda Prodotti con "Ne ho fatti altri": aggiorna le scorte e ti dice quanto hai guadagnato davvero.</div>'
+        :
+        '<div class="table-wrap"><table><thead><tr><th>Data</th><th>Prodotto</th><th>Quantità</th><th>Costo</th><th>Incasso</th><th>Guadagno</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      );
+
+    Array.prototype.forEach.call(root.querySelectorAll('[data-delprod-log]'), function(b){
+      b.addEventListener('click', async function(){
+        var ok = await modalConfirm('Eliminare questa registrazione? Le scorte non verranno ripristinate automaticamente.');
+        if(!ok) return;
+        state.productions = state.productions.filter(function(x){ return x.id!==b.dataset.delprodLog; });
+        save(); renderAll();
+      });
+    });
+  }
+
+  // ================= RIEPILOGO =================
+  function renderRiepilogoView(){
+    var root = document.getElementById('view-riepilogo');
+    var productsWithMargin = state.products.map(function(p){ return {p:p, c:computeProduct(p)}; }).filter(function(x){ return x.c.margin!==null; });
+    var avgMarginPct = productsWithMargin.length ? productsWithMargin.reduce(function(s,x){return s+x.c.marginPct;},0)/productsWithMargin.length : null;
+    var stockValue = state.materials.reduce(function(s,m){ return s + Math.max(0,m.remainingQty)*unitCost(m); }, 0);
+    var lowStockItems = state.materials.filter(function(m){ return m.remainingQty <= lowStockThreshold(m); });
+
+    root.innerHTML =
+      '<div class="stat-grid">'+
+        '<div class="stat-tile"><div class="k">Materiali</div><div class="v num">'+state.materials.length+'</div></div>'+
+        '<div class="stat-tile"><div class="k">Prodotti</div><div class="v num">'+state.products.length+'</div></div>'+
+        '<div class="stat-tile"><div class="k">Valore scorte a magazzino</div><div class="v num">'+fmtEUR(stockValue)+'</div></div>'+
+        '<div class="stat-tile"><div class="k">Guadagno medio</div><div class="v num '+(avgMarginPct===null?'':(avgMarginPct>=0?'good':'bad'))+'">'+(avgMarginPct===null?'—':fmtNum(avgMarginPct,0)+'%')+'</div></div>'+
+      '</div>'+
+      '<div class="grid-2">'+
+        '<div class="card">'+
+          '<div class="section-title">Guadagno per prodotto</div>'+
+          (productsWithMargin.length===0 ? '<div class="hint">Imposta un prezzo di vendita sui prodotti per vedere il guadagno qui.</div>' :
+            '<div class="chart-legend"><span class="item"><span class="dot" style="background:var(--good)"></span>guadagno</span><span class="item"><span class="dot" style="background:var(--bad)"></span>in perdita</span></div>'+
+            '<div id="marginChart"></div>'
+          )+
+        '</div>'+
+        '<div class="card">'+
+          '<div class="section-title">Scorte in esaurimento</div>'+
+          (lowStockItems.length===0 ? '<div class="hint">Tutte le scorte sono a un livello adeguato.</div>' :
+            '<div class="lowstock-list">'+lowStockItems.map(function(m){
+              return '<div class="lowstock-item"><span class="name">'+esc(m.name)+'</span><span class="qty mono">'+fmtNum(m.remainingQty)+' '+esc(m.unit)+' rimasti</span></div>';
+            }).join('')+'</div>'
+          )+
+        '</div>'+
+      '</div>';
+
+    if(productsWithMargin.length){
+      var maxAbs = Math.max.apply(null, productsWithMargin.map(function(x){ return Math.abs(x.c.margin); }).concat([0.0001]));
+      var sorted = productsWithMargin.slice().sort(function(a,b){ return b.c.margin - a.c.margin; });
+      var chartEl = document.getElementById('marginChart');
+      chartEl.innerHTML = sorted.map(function(x){
+        var pct = (Math.abs(x.c.margin)/maxAbs)*50;
+        var good = x.c.margin>=0;
+        var style = good ? 'left:50%; width:'+pct+'%; background:var(--good);' : 'left:'+(50-pct)+'%; width:'+pct+'%; background:var(--bad);';
+        return '<div class="divbar-row">'+
+          '<div class="lbl" title="'+esc(x.p.name)+'">'+esc(x.p.name)+'</div>'+
+          '<div class="divbar-track"><div class="divbar-zero"></div><div class="divbar-fill" style="'+style+'" data-tip="'+esc(x.p.name)+': '+fmtEUR(x.c.margin)+'"></div></div>'+
+          '<div class="val" style="color:var(--'+(good?'good':'bad')+')">'+fmtEUR(x.c.margin)+'</div>'+
+        '</div>';
+      }).join('');
+    }
+  }
+
+  // ---------- shared bar tooltip ----------
+  document.addEventListener('mousemove', function(e){
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    var tip = document.getElementById('tooltip');
+    if(el){
+      tip.textContent = el.getAttribute('data-tip');
+      tip.style.left = e.clientX + 'px';
+      tip.style.top = e.clientY + 'px';
+      tip.classList.add('show');
+    } else {
+      tip.classList.remove('show');
+    }
+  });
+
+  // ---------- export / import / reset ----------
+  document.getElementById('btnExport').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'filoecosto-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  });
+  document.getElementById('btnImport').addEventListener('click', function(){
+    document.getElementById('fileImport').click();
+  });
+  document.getElementById('fileImport').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = async function(){
+      var data;
+      try{ data = JSON.parse(reader.result); }
+      catch(err){ await modalAlert('File non valido.'); return; }
+      var ok = await modalConfirm('Importare questo backup? I dati attuali verranno sostituiti (esporta prima se vuoi conservarli).');
+      if(!ok) return;
+      state = migrate(data);
+      editingMaterialId = null; editingProductId = null; draftItems = []; expandedProducts = {};
+      save(); renderAll(); toast('Backup importato');
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+  document.getElementById('btnReset').addEventListener('click', async function(){
+    var ok = await modalConfirm('Cancellare TUTTI i dati (materiali, prodotti, produzioni)? Questa azione non si può annullare — esporta un backup prima, se vuoi.');
+    if(!ok) return;
+    state = { materials:[], products:[], productions:[], settings:{defaultLaborRate:0}, tab:'materiali' };
+    editingMaterialId = null; editingProductId = null; draftItems = []; expandedProducts = {};
+    save(); renderAll(); toast('Dati cancellati');
+  });
+  document.getElementById('btnRefresh').addEventListener('click', async function(){
+    if(!SYNC_ENABLED){ toast('Sincronizzazione non configurata su questa pagina'); return; }
+    await pullRemote(false);
+    toast('Aggiornato');
+  });
+
+  // ---------- render orchestration ----------
+  function renderAll(){
+    renderTabs();
+    renderViews();
+    renderMaterialiView();
+    renderProdottiView();
+    renderProduzioniView();
+    renderRiepilogoView();
+  }
+  renderAll();
+  setSyncStatus(SYNC_ENABLED ? 'saving' : 'offline');
+  if(SYNC_ENABLED){
+    pullRemote(true);
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) pullRemote(true); });
+    setInterval(function(){ if(!document.hidden) pullRemote(true); }, 25000);
+  }
+})();
+</script>
+</body>
+</html>
